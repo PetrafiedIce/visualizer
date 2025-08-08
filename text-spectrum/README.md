@@ -1,69 +1,47 @@
-# React + TypeScript + Vite
+# Text Spectrum
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Type anything and watch a live 3D color spectrum emerge. Built with React, Vite, Tailwind CSS, and React Three Fiber.
 
-Currently, two official plugins are available:
+## Features
+- Live 3D visualization of your text
+- Neon glass UI with Tailwind CSS
+- High‑quality postprocessing (bloom, chromatic aberration, vignette)
+- Orbit controls (drag to rotate)
+- URL hash persistence: share your spectrum via the URL
+- Code‑split heavy 3D bundle for faster initial load
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech stack
+- React 19 + TypeScript
+- Vite 7
+- Tailwind CSS 3
+- three.js + @react-three/fiber + drei + postprocessing
+- ESLint (recommended rules)
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Getting started
+```bash
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- Dev server runs on localhost (container/cloud friendly).
+- Open the app and start typing. Drag the canvas to orbit the camera.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
+- `npm run dev`: Start dev server
+- `npm run lint`: Lint all files
+- `npm run build`: Type-check and build for production
+- `npm run preview`: Preview the production build
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Performance
+- Heavy three.js and R3F dependencies are lazy‑loaded and split into a separate chunk via Vite `manualChunks`.
+- You can tune chunking in `vite.config.ts`.
+
+## Deployment
+The app is a static build. Any static host works:
+```bash
+npm run build
+# Deploy the contents of dist/ to your host
 ```
+
+## License
+MIT — see `../LICENSE`.

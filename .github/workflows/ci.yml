@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: text-spectrum/package-lock.json
+
+      - name: Install dependencies
+        working-directory: text-spectrum
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        working-directory: text-spectrum
+        run: npm run lint
+
+      - name: Build
+        working-directory: text-spectrum
+        run: npm run build
