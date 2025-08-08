@@ -57,8 +57,9 @@ function App() {
       <div className="absolute top-3 left-3 text-white/60 text-xs md:text-sm">
         <span className="font-semibold text-white/80">text-spectrum</span> · react-three-fiber
       </div>
-      <div className="absolute top-3 right-3 text-white/60 text-xs md:text-sm">
-        <a className="hover:text-white underline" href="/game.html">Play Orb Collector →</a>
+      <div className="absolute top-3 right-3 text-white/60 text-xs md:text-sm flex gap-3">
+        <a className="hover:text-white underline" href="/game.html">Orb Collector →</a>
+        <a className="hover:text-white underline" href="/dodge.html">Neon Dodge →</a>
       </div>
     </div>
   )
