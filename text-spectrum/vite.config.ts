@@ -15,6 +15,7 @@ export default defineConfig({
       input: {
         main: resolve(rootDir, 'index.html'),
         game: resolve(rootDir, 'game.html'),
+        dodge: resolve(rootDir, 'dodge.html'),
       },
       output: {
         manualChunks: {
