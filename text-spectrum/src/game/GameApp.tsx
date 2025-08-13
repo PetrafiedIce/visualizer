@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { initialStats, storyData, type SceneNode, type Stats } from './story'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { filterUnsafeContent, generateAssistantReply, type ChatMessage } from './ai'
 
 function usePersistentState<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(() => {
@@ -20,45 +20,45 @@ function usePersistentState<T>(key: string, initial: T) {
   return [value, setValue] as const
 }
 
-function applyEffects(stats: Stats, effects?: Partial<Stats>): Stats {
-  if (!effects) return stats
-  return {
-    ...stats,
-    affection: Math.max(0, Math.min(5, (stats.affection ?? 0) + (effects.affection ?? 0))),
-  }
-}
-
 export default function GameApp() {
-  const [currentId, setCurrentId] = usePersistentState<string>('romance.currentId', 'intro')
-  const [stats, setStats] = usePersistentState<Stats>('romance.stats', initialStats)
   const [ageConfirmed, setAgeConfirmed] = usePersistentState<boolean>('romance.ageConfirmed', false)
   const [suggestiveEnabled, setSuggestiveEnabled] = usePersistentState<boolean>('romance.suggestiveEnabled', false)
+  const [messages, setMessages] = usePersistentState<ChatMessage[]>('romance.chat', [])
+  const [input, setInput] = useState('')
+  const [isThinking, setIsThinking] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null)
 
-  const node: SceneNode | undefined = useMemo(() => storyData[currentId], [currentId])
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages, isThinking])
 
-  const proceed = useCallback((nextId?: string) => {
-    if (!nextId) return
-    setCurrentId(nextId)
-  }, [setCurrentId])
+  const send = useCallback(async () => {
+    const trimmed = input.trim()
+    if (!trimmed || isThinking) return
 
-  const choose = useCallback((choiceId: string) => {
-    if (!node || !node.choices) return
-    const choice = node.choices.find((c) => c.id === choiceId)
-    if (!choice) return
+    const id = crypto.randomUUID()
+    const userMsg: ChatMessage = { id, role: 'user', text: trimmed }
 
-    if (typeof choice.minAffection === 'number' && stats.affection < choice.minAffection) {
-      setCurrentId('goodnightScene')
-      return
+    setMessages((prev) => [...prev, userMsg])
+    setInput('')
+    setIsThinking(true)
+
+    // Simulate latency
+    await new Promise((r) => setTimeout(r, 300 + Math.random() * 400))
+
+    const replyText = generateAssistantReply([...messages, userMsg], suggestiveEnabled)
+    const { safeText, blocked } = filterUnsafeContent(replyText)
+
+    const assistantMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: blocked ? `${safeText} (filtered)` : safeText,
     }
+    setMessages((prev) => [...prev, assistantMsg])
+    setIsThinking(false)
+  }, [input, isThinking, messages, suggestiveEnabled, setMessages])
 
-    setStats((prev) => applyEffects(prev, choice.effects))
-    setCurrentId(choice.next)
-  }, [node, setStats, stats.affection, setCurrentId])
-
-  const reset = useCallback(() => {
-    setStats(initialStats)
-    setCurrentId('intro')
-  }, [setStats, setCurrentId])
+  const clearChat = useCallback(() => setMessages([]), [setMessages])
 
   if (!ageConfirmed) {
     return (
@@ -92,36 +92,22 @@ export default function GameApp() {
         </div>
 
         <div className="absolute top-3 left-3 text-white/60 text-xs md:text-sm">
-          <span className="font-semibold text-white/80">evening-cafe</span> · dating sim
+          <span className="font-semibold text-white/80">evening-cafe</span> · mature chat
         </div>
       </div>
     )
   }
-
-  if (!node) {
-    return (
-      <div className="h-full w-full grid place-items-center">
-        <div className="glass rounded-2xl p-6 max-w-xl w-full text-center">
-          <div className="text-white/70 mb-4">Story node not found.</div>
-          <button className="btn-primary" onClick={() => reset()}>Restart</button>
-        </div>
-      </div>
-    )
-  }
-
-  const isEnding = !node.next && !node.choices
-  const displayText = suggestiveEnabled && node.textSuggestive ? node.textSuggestive : node.text
 
   return (
     <div className="h-full w-full">
-      <div className="absolute inset-0" style={{ background: node.background || '#070a12' }} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, #0b0f1a 0%, #1b1f3a 50%, #0b0f1a 100%)' }} />
 
       <div className="pointer-events-none absolute inset-0 flex items-start justify-center p-4">
         <div className="pointer-events-auto glass w-full max-w-3xl rounded-2xl p-4 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="inline-block h-2 w-2 rounded-full bg-neon-pink animate-pulse" />
-              <div className="text-xs md:text-sm text-white/70">A cozy, mature romance. No explicit content.</div>
+              <div className="text-xs md:text-sm text-white/70">Warm, flirty, non‑explicit chat. 18+ only.</div>
             </div>
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-xs md:text-sm text-white/70">
@@ -133,64 +119,57 @@ export default function GameApp() {
                 />
                 Suggestive mode
               </label>
+              <button
+                className="inline-flex items-center justify-center rounded-xl bg-white/10 border border-white/10 px-3 py-2 text-white hover:bg-white/15 transition text-xs md:text-sm"
+                onClick={clearChat}
+              >
+                Clear chat
+              </button>
               <a className="text-xs md:text-sm text-white/70 hover:text-white underline" href="/">Back</a>
             </div>
           </div>
 
-          {node.warning && (
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs md:text-sm text-white/80">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <span className="font-semibold">Content note:</span> {node.warning}
-                </div>
-                {node.skippableTo && (
-                  <button
-                    className="inline-flex items-center justify-center rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-white hover:bg-white/15 transition"
-                    onClick={() => proceed(node.skippableTo)}
-                  >
-                    Skip scene
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-5">
-            {node.speaker && (
-              <div className="text-white/70 text-xs">{node.speaker}</div>
+          <div ref={listRef} className="mt-4 h-[60vh] overflow-y-auto pr-1 space-y-3">
+            {messages.length === 0 && (
+              <div className="text-white/60 text-sm">Say hi to start a cozy conversation.</div>
             )}
-            <div className="mt-1 text-lg md:text-xl leading-relaxed">{displayText}</div>
+            {messages.map((m) => (
+              <div key={m.id} className={m.role === 'user' ? 'text-right' : 'text-left'}>
+                <div className={`inline-block max-w-[80%] rounded-2xl px-3 py-2 text-sm ${m.role === 'user' ? 'bg-neon-pink/20 border border-white/10' : 'bg-white/10 border border-white/10'}`}>{m.text}</div>
+              </div>
+            ))}
+            {isThinking && (
+              <div className="text-left">
+                <div className="inline-flex items-center gap-2 text-white/60 text-sm">
+                  <span className="inline-block h-2 w-2 rounded-full bg-neon-pink animate-pulse" />
+                  typing…
+                </div>
+              </div>
+            )}
           </div>
 
-          {node.choices && (
-            <div className="mt-5 grid gap-3">
-              {node.choices.map((c) => {
-                const label = suggestiveEnabled && c.textSuggestive ? c.textSuggestive : c.text
-                return (
-                  <button key={c.id} className="btn-primary justify-self-start" onClick={() => choose(c.id)}>
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {!node.choices && node.next && (
-            <div className="mt-5">
-              <button className="btn-primary" onClick={() => proceed(node.next)}>Continue</button>
-            </div>
-          )}
-
-          {isEnding && (
-            <div className="mt-6 flex items-center gap-3">
-              <button className="btn-primary" onClick={reset}>Play again</button>
-            </div>
-          )}
+          <form
+            className="mt-4 flex items-center gap-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              send()
+            }}
+          >
+            <input
+              className="input flex-1"
+              placeholder="Write something sweet (no explicit content)…"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+            <button className="btn-primary" type="submit" disabled={isThinking || input.trim().length === 0}>
+              Send
+            </button>
+          </form>
         </div>
       </div>
 
       <div className="absolute top-3 left-3 text-white/60 text-xs md:text-sm">
-        <span className="font-semibold text-white/80">evening-cafe</span> · dating sim
+        <span className="font-semibold text-white/80">evening-cafe</span> · mature chat
       </div>
     </div>
   )
