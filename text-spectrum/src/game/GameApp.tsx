@@ -31,6 +31,7 @@ function applyEffects(stats: Stats, effects?: Partial<Stats>): Stats {
 export default function GameApp() {
   const [currentId, setCurrentId] = usePersistentState<string>('romance.currentId', 'intro')
   const [stats, setStats] = usePersistentState<Stats>('romance.stats', initialStats)
+  const [ageConfirmed, setAgeConfirmed] = usePersistentState<boolean>('romance.ageConfirmed', false)
 
   const node: SceneNode | undefined = useMemo(() => storyData[currentId], [currentId])
 
@@ -58,6 +59,44 @@ export default function GameApp() {
     setStats(initialStats)
     setCurrentId('intro')
   }, [setStats, setCurrentId])
+
+  if (!ageConfirmed) {
+    return (
+      <div className="h-full w-full">
+        <div className="absolute inset-0" style={{ background: '#070a12' }} />
+
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+          <div className="pointer-events-auto glass w-full max-w-3xl rounded-2xl p-4 md:p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="inline-block h-2 w-2 rounded-full bg-neon-pink animate-pulse" />
+                <div className="text-xs md:text-sm text-white/70">Mature themes. 18+ only. No explicit content.</div>
+              </div>
+              <a className="text-xs md:text-sm text-white/70 hover:text-white underline" href="/">Back to spectrum</a>
+            </div>
+
+            <div className="mt-4">
+              <div className="text-lg md:text-xl font-semibold">Are you 18 or older?</div>
+              <div className="mt-2 text-white/70 text-sm">By continuing you confirm you are at least 18 years old and agree to view content with mature themes.</div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button className="btn-primary" onClick={() => setAgeConfirmed(true)}>I am 18+ and agree</button>
+                <button
+                  className="inline-flex items-center justify-center rounded-xl bg-white/10 border border-white/10 px-4 py-3 text-white hover:bg-white/15 transition"
+                  onClick={() => window.location.assign('/')}
+                >
+                  No, take me back
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute top-3 left-3 text-white/60 text-xs md:text-sm">
+          <span className="font-semibold text-white/80">evening-cafe</span> · dating sim
+        </div>
+      </div>
+    )
+  }
 
   if (!node) {
     return (
